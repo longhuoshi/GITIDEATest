@@ -1,0 +1,101 @@
+
+$(function(){
+	//初始化默认时间 
+	var now = new Date();
+	var firstDay=new Date();
+	 firstDay.setDate(1);
+	// 查询配送开始时间
+	$("#startDateSh").datepicker({language: 'zh-CN', format: 'yyyy-mm-dd',autoclose:true,clearBtn:true});
+	$('#startDateSh').datepicker('setDate', new Date((firstDay).getTime()));
+    $("#endDateSh").datepicker({language: 'zh-CN', format: 'yyyy-mm-dd',autoclose:true,clearBtn:true});
+	$('#endDateSh').datepicker('setDate', new Date((now).getTime()));
+	
+	$.getCaches(contextPath+"/cache/querySysDict?utp="+urltype,"SEX,AG_WORK_INTENSITY,AG_STATUS",function(cacheKeys){
+		selectSupplier();
+	    //Table
+		buyerCountTable = $('#buyerCountTable').TxlcTable({
+		  formUrl: {
+			 searchForm: "searchForm",  // 查询表单
+			 searchUrl: contextPath + "/order/buyercount/list?utp="+urltype // 获取表格数据地址
+		  },
+		  columns: [
+	          {label: "orderId", title:"订单编号"},
+	          {label: "buyerName", title:"食堂",orderable: false},
+	          {label: "supplierName", title:"供应商",orderable: false},
+	          {label: "goodsName", title:"商品"},
+	          {label: "specDesc", title:"规格"},
+	          {label: "untiCode", title:"计量单位",},
+	         // {label: "agStatus", title:"状态",cacheKey: cacheKeys["AG_STATUS"]},
+	          {label: "customerDeliveryDate", title:"送货日期"},
+	          {label: "confirmGoodsDate", title:"确认日期"},	
+	          {label: "price", title:"价格"},
+	          {label: "num", title:"数量"},
+	          {label: "xj", title:"小计"},
+	      ],
+		  order: [[0, "desc"]], 
+		  columnDefs: [
+		     {
+              "render": function ( data, type, row ) {
+            	  if(data!=null&&data!=""){
+	          			return data.substring(0,10);
+	          	  }else{
+	          		  return data;
+	          	  }
+	              },
+	          "targets": 6
+		      },
+		     {
+              "render": function ( data, type, row ) {
+            	  if(data!=null&&data!=""){
+            			return data.substring(0,10);
+            	  }else{
+            		  return data;
+            	  }
+	              
+	              },
+	          "targets": 7
+		      }
+	       ],  
+	       fnDrawCallback: function () {//表格刷新时候的回调函数
+	    	   if(!$("#searchForm #_isPageDraw").val()){//第一次画表格需要执行,注意：必须放在createTablePage的前面
+	        		getTotal();
+	        	}
+	        	createTablePage('searchForm',buyerCountTable);
+	    	 } 	
+	    });
+		searchRowCount("searchForm","buyerCountTable",contextPath+"/order/buyercount/getTotalRecords?utp="+urltype);
+		tablesResize($("#buyerCountTable"),{"minHeight":window,"minusHeight":[$("#searchGodBox")]});
+		$('#buyerCountTable').on('draw.dt',function(){
+			tablesResize($("#buyerCountTable"));
+		}).on('column-sizing.dt',function(e, settings){
+			tablesResize($("#buyerCountTable"));
+		});
+	});
+	
+	
+	if(entryFlms==2){//自定义分类
+		$('#searchForm #bigClassId').change(function(e){
+			$("#searchForm #smallClassId").empty();
+			$.ajax({   
+			    type:'POST',
+			    dataType:"json", 
+			    data:{"classId":$("#searchForm #bigClassId").val()},
+			    url: contextPath + "/sys/subentrygoodsclass/smallclasslist?utp="+urltype,//请求的action路径  
+			    error:function () {//请求失败处理函数  
+			        alert('请求失败');  
+			    },  
+			    success:function(data){ //请求成功后处理函数。 
+			    	$.each(data.data, function(key, val) {       		
+			    		$("#searchForm #smallClassId").append('<option value="' + val.classId + '" >' + val.className + '</option>');	  
+			    	});   
+			    	$("#searchForm #smallClassId").val('');
+			    }      
+			});	
+		})	
+	}
+
+	
+	
+});
+
+
